@@ -1,0 +1,23 @@
+#profile{
+    position: relative;
+    /* display: none; */
+
+}
+.pro h4{
+    width: 6rem;
+    height: 2.2rem;
+    border: 2px solid #fff;
+    color: #fff;
+    border-radius: 10px;
+    position: absolute;
+    top: 5.5rem;
+    right: 2.5rem;
+    text-align: center;
+    cursor: pointer;
+    font-size: 1.3rem;
+    transition: .4s all ease;
+}
+.pro h4:hover{
+    background-color: #eb07aa;
+    border-color: #eb07aa;
+}
