@@ -50,7 +50,7 @@ const SignUp = () => {
     const register = () => {
         const { name, email, password, conformPass } = user;
         if (name && email && password && password === conformPass && !errors.email) {
-            axios.post('https://weebmeet.onrender.com/register', user).then((res) => {
+            axios.post('https://weebmeet-backend1.onrender.com/register', user).then((res) => {
                 alert(res.data.message);
                 if (res.data.message === 'Successfully registered. Please login now.') {
                     navigate('/login');
