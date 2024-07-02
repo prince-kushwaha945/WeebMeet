@@ -1,0 +1,88 @@
+#create{
+    width: 100%;
+}
+.c_main{
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-around;
+    align-items: center;
+    margin-top: 4rem;
+}
+.c_main .c_left{
+    margin-left: 3rem;
+
+}
+.c_main .c_left h2{
+    font-size: 4rem;
+    font-weight: 700;
+    margin-bottom: 2rem;
+    color: #543fff;
+    color: #fff;
+    text-shadow: 2px 2px 2px #543fff; 
+    text-shadow: 0px 2px 2px #fff; 
+    
+
+}
+.c_main .c_left p{
+    font-size: 1.2rem;
+    font-weight: 400;
+    margin-bottom: 2rem;
+}
+.c_main .c_left .btn{
+    background: #eb07aa;
+    color: #fff;
+    font-size: 1.2rem;
+    font-weight: 700;
+    width: 11rem;
+    height: 2.7rem;
+    border-radius: 20px;
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+}
+.c_main .c_left .dot2{
+    font-size: 1.1rem;
+    font-weight: 700;
+    width: 14rem;
+    margin-left: 1rem;
+}
+
+
+.c_main .c_left .c_t-btn{
+    display: flex;
+    align-items: center;
+}
+
+.c_main .c_left .btn #dot{
+    height: 20px;
+    width: 20px;
+    color: #fff;
+    background: #fff;
+    border: 2px solid #fff;
+    border-radius: 50%;
+}
+
+
+.c_main .c_left .input-btn{
+    padding: .5rem;
+    border: 3px solid #eb07aa;
+    border-radius: 30px;
+    margin-left: 1.5rem;
+    outline: 0;
+    padding-left: 1rem;
+    color: #eb07aa;
+}
+.c_main .c_left .input-btn::placeholder{
+    color: #eb07aa;
+    font-weight: 700;
+}
+
+
+.c_t-btn .join{
+    font-size: 1.3rem;
+    font-weight: 700;
+    margin-left: 1.5rem;
+    cursor: pointer;
+}
+
+
