@@ -23,7 +23,7 @@ const Login = () => {
 
   const handleLogin = () => {
     try {
-      axios.post('https://weebmeet.onrender.com/login', user).then((res) => {
+      axios.post('https://weebmeet-backend1.onrender.com/login', user).then((res) => {
         alert(res.data.message);
         if (res.data.message === 'Login Successful') {
           navigate('/create');
