@@ -5,7 +5,7 @@
   "main": "index.js",
   "type": "module",
   "scripts": {
-    "type": "commonjs"
+   "start": "node index.js"
   },
   "author": "Prince Kushwaha",
   "license": "ISC",
@@ -18,5 +18,8 @@
     "mongoose": "^7.6.3",
     "nodemailer": "^6.9.7",
     "socket.io": "^4.7.2"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.4"
   }
 }
