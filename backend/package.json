@@ -5,7 +5,8 @@
   "main": "index.js",
   "type": "module",
   "scripts": {
-    "type": "commonjs"
+    "type": "commonjs",
+    "start": "nodemon server.js"
   },
   "author": "Prince Kushwaha",
   "license": "ISC",
