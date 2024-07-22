@@ -1,237 +1,195 @@
-import express from "express"
-import cors from 'cors'
-import mongoose from "mongoose"
+import express from 'express';
+import cors from 'cors';
+import mongoose from 'mongoose';
+import nodemailer from 'nodemailer';
+import jwt from 'jsonwebtoken';
+import dotenv from 'dotenv';
+import bcrypt from 'bcryptjs';
 
+dotenv.config();
 
+const app = express();
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+app.use(cors());
 
+const mongoURI = process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/mydatabase';
 
-const app = express()
-
-app.use(express.json())
-app.use(express.urlencoded())
-app.use(cors())
-
-mongoose.connect("mongodb://127.0.0.1:27017/vclogin&signUp");
+mongoose.connect(mongoURI, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+})
+  .then(() => console.log('Connected to MongoDB'))
+  .catch((err) => console.error('Failed to connect to MongoDB', err));
 
 const userSchema = new mongoose.Schema({
-    name: String,
-    email: String,
-    password: String,
-    verifytoken: {
-        type: String,
-    }
-})
-
-const User = new mongoose.model("User", userSchema)
-
-
-
-app.post('/login', (req, res) => {
-    const { email, password } = req.body;
-
-    // Check if a user with the same email already exists
-    User.findOne({ email: email })
-        .then(user => {
-            if (user) {
-                if (password === user.password) {
-                    res.send({ message: "Login Successful", user: user });
-                } else {
-                    res.send({ message: "Password didn't match" });
-                }
-            } else {
-                res.send({ message: "User not registered" });
-            }
-        })
-        .catch(err => {
-            // Handle any errors that may occur during the query
-            res.status(500).send({ message: "An error occurred" });
-        });
+  name: String,
+  email: String,
+  password: String,
+  verifytoken: {
+    type: String,
+  }
 });
 
+const User = mongoose.model('User', userSchema);
 
-app.post("/register", async (req, res) => {
-    try {
-        const { name, email, password } = req.body;
+app.post('/login', async (req, res) => {
+  const { email, password } = req.body;
 
-        // Check if a user with the same email already exists
-        const existingUser = await User.findOne({ email: email });
-
-        if (existingUser) {
-            res.send({ message: "User already registerd" })
-        } else {
-            // Create a new user instance
-            const newUser = new User({
-                name,
-                email,
-                password
-            });
-
-            // Save the new user to the database
-            await newUser.save();
-
-            res.status(201).json({ message: "Successfully registered. Please login now." });
-        }
-    } catch (error) {
-        res.status(500).json({ message: "Registration failed", error: error.message });
+  try {
+    const user = await User.findOne({ email });
+    if (user) {
+      const isMatch = await bcrypt.compare(password, user.password);
+      if (isMatch) {
+        res.send({ message: 'Login Successful', user });
+      } else {
+        res.send({ message: "Password didn't match" });
+      }
+    } else {
+      res.send({ message: 'User not registered' });
     }
+  } catch (err) {
+    res.status(500).send({ message: 'An error occurred', error: err.message });
+  }
 });
 
+app.post('/register', async (req, res) => {
+  try {
+    const { name, email, password } = req.body;
+    const existingUser = await User.findOne({ email });
 
+    if (existingUser) {
+      res.send({ message: 'User already registered' });
+    } else {
+      const hashedPassword = await bcrypt.hash(password, 10);
+      const newUser = new User({
+        name,
+        email,
+        password: hashedPassword,
+      });
 
-app.post("/reset-password", async (req, res) => {
-    const { email, newPassword } = req.body;
-
-    try {
-        // Find the user by email
-        const user = await User.findOne({ email });
-
-        if (!user) {
-            return res.status(400).json({ message: 'email does not exist. Please check your email address and try again.' });
-        }
-
-        // Update the user's password
-        user.password = newPassword;
-        await user.save();
-
-        return res.status(200).json({ message: 'Password reset successfully' });
-    } catch (error) {
-        res.status(500).json({ message: 'An error occurred', error: error.message });
+      await newUser.save();
+      res.status(201).json({ message: 'Successfully registered. Please login now.' });
     }
+  } catch (error) {
+    res.status(500).json({ message: 'Registration failed', error: error.message });
+  }
 });
 
+app.post('/reset-password', async (req, res) => {
+  const { email, newPassword } = req.body;
 
-import nodemailer from "nodemailer";
-import jwt from "jsonwebtoken";
-import "dotenv/config";
-import bcrypt from "bcryptjs";
+  try {
+    const user = await User.findOne({ email });
+
+    if (!user) {
+      return res.status(400).json({ message: 'Email does not exist. Please check your email address and try again.' });
+    }
+
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    user.password = hashedPassword;
+    await user.save();
+
+    res.status(200).json({ message: 'Password reset successfully' });
+  } catch (error) {
+    res.status(500).json({ message: 'An error occurred', error: error.message });
+  }
+});
 
 const keysecret = process.env.SECRET_KEY;
 
-// email config
-
 const transporter = nodemailer.createTransport({
-    service: "gmail",
-    auth: {
-        user: "princeku945@gmail.com",
-        pass: "ukcl ploj pmvq wvyt"
+  service: 'gmail',
+  auth: {
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS,
+  },
+});
+
+app.post('/sendpasswordlink', async (req, res) => {
+  const { email } = req.body;
+
+  if (!email) {
+    return res.status(401).json({ status: 401, message: 'Enter Your Email' });
+  }
+
+  try {
+    const user = await User.findOne({ email });
+
+    if (!user) {
+      return res.status(401).json({ status: 401, message: 'Invalid User' });
     }
-})
 
+    const token = jwt.sign({ _id: user._id }, keysecret, { expiresIn: '2m' });
+    await User.findByIdAndUpdate(user._id, { verifytoken: token }, { new: true });
 
-// send email Link for reset Password 
+    const mailOptions = {
+      from: process.env.EMAIL_USER,
+      to: email,
+      subject: 'Sending Email for password Reset',
+      text: `This Link Valid For 2 MINUTES http://localhost:3000/forget-pass/${user._id}/${token}`,
+    };
 
-app.post("/sendpasswordlink", async (req, res) => {
-    console.log(req.body)
+    transporter.sendMail(mailOptions, (error, info) => {
+      if (error) {
+        return res.status(401).json({ status: 401, message: 'Email not send' });
+      } else {
+        res.status(201).json({ status: 201, message: 'Email send Successfully' });
+      }
+    });
+  } catch (error) {
+    res.status(401).json({ status: 401, message: 'Invalid User', error: error.message });
+  }
+});
 
-    const { email } = req.body;
+app.get('/forget-pass/:id/:token', async (req, res) => {
+  const { id, token } = req.params;
 
-    if (!email) {
-        res.status(401).json({ status: 401, message: "Enter Your Email" })
+  try {
+    const user = await User.findOne({ _id: id, verifytoken: token });
+
+    if (!user) {
+      return res.status(401).json({ status: 401, message: 'User not exist' });
     }
 
-    try {
-        const userfind = await User.findOne({ email: email });
-        // console.log("userfind",  userfind)
+    jwt.verify(token, keysecret, (err, decoded) => {
+      if (err) {
+        return res.status(401).json({ status: 401, message: 'Token expired or invalid' });
+      }
+      res.status(201).json({ status: 201, validuser: user });
+    });
+  } catch (error) {
+    res.status(401).json({ status: 401, error: error.message });
+  }
+});
 
-        // token generate for reset password
-        const token = jwt.sign({ _id: userfind._id }, keysecret, {
-            expiresIn: "120s"
-        });
-        // console.log("token", token);
+app.post('/forget-pass/:id/:token', async (req, res) => {
+  const { id, token } = req.params;
+  const { password } = req.body;
 
-        const setusertoken = await User.findByIdAndUpdate({ _id: userfind._id }, { verifytoken: token }, { new: true });
-        // console.log("setusertoken", setusertoken);
+  try {
+    const user = await User.findOne({ _id: id, verifytoken: token });
 
-        if (setusertoken) {
-            const mailOptions = {
-                from: "princeku945@gmail.com",
-                to: email,
-                subject: "Sending Email for passwoed Reset",
-                text: `This Link Valid For 2 MINUTES http://localhost:3000/forget-pass/${userfind.id}/${setusertoken.verifytoken}`
-            }
-            transporter.sendMail(mailOptions, (error, info) => {
-                if (error) {
-                    console.log("error", error);
-                    res.status(401).json({ status: 401, message: "Email not send" });
-
-                } else {
-                    console.log("Email send", info.response);
-                    res.status(201).json({ status: 201, message: "Email send Succsfully" });
-                }
-            })
-        }
-
-    } catch (error) {
-
-        res.status(401).json({ status: 401, message: "Invalid User" });
+    if (!user) {
+      return res.status(401).json({ status: 401, message: 'User not exist' });
     }
-})
 
-// verify user for forgot passwoed time
+    jwt.verify(token, keysecret, async (err, decoded) => {
+      if (err) {
+        return res.status(401).json({ status: 401, message: 'Token expired or invalid' });
+      }
 
-app.get("/forget-pass/:id/:token", async (req, res) => {
-    const { id, token } = req.params;
+      const hashedPassword = await bcrypt.hash(password, 10);
+      user.password = hashedPassword;
+      await user.save();
 
-    try {
-        const validuser = await User.findOne({ _id: id, verifytoken: token });
-
-        const verifyToken = jwt.verify(token, keysecret);
-
-        if (validuser && verifyToken._id) {
-            res.status(201).json({ status: 201, validuser })
-
-        } else {
-            res.status(401).json({ status: 401, message: "user not exist" })
-        }
-
-    } catch (error) {
-        res.status(401).json({ status: 401, error })
-    }
-})
-
-
-// change password 
-
-app.post("/:id/:token", async (req, res) => {
-    const { id, token } = req.params;
-
-    const { password } = req.body;
-
-    try {
-        const validuser = await User.findOne({ _id:id, verifytoken:token });
-
-        const verifyToken = jwt.verify(token, keysecret);
-
-        if (validuser && verifyToken._id) {
-
-            const setnewuserpass = await User.findByIdAndUpdate({_id:id}, {password:password });
-
-            setnewuserpass.save();
-
-            return res.status(201).json({ status:201, setnewuserpass});
-
-        } else {
-            res.status(401).json({ status: 401, message: "user not exist" })
-        }
-
-    } catch (error) {
-        res.status(401).json({ status: 401, error })
-    }
-})
-
-
-
-
-
-
-
-
-
+      res.status(201).json({ status: 201, message: 'Password changed successfully' });
+    });
+  } catch (error) {
+    res.status(401).json({ status: 401, error: error.message });
+  }
+});
 
 app.listen(9002, () => {
-    console.log("BE started at port 9002")
-})
-
-
-
-
+  console.log('BE started at port 9002');
+});
