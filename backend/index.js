@@ -15,6 +15,8 @@ app.use(cors());
 
 const mongoURI = process.env.MONGO_URI;
 
+console.log('Mongo URI:', mongoURI); // Log the URI to check if it is retrieved correctly
+
 mongoose.connect(mongoURI, {
   useNewUrlParser: true,
   useUnifiedTopology: true,
